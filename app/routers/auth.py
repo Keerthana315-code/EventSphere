@@ -1,61 +1,47 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from datetime import timedelta
 
-from jose import JWTError
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import (
-    hash_password,
     verify_password,
     create_access_token,
-    decode_access_token
+    hash_password,
 )
-
 from app.models.user import User
-from app.schemas.user import (
-    UserRegister,
-    UserLogin,
-    UserResponse,
-    TokenResponse
-)
+from app.schemas.user import UserRegister, UserResponse
 
 
 router = APIRouter(
     prefix="/auth",
-    tags=["Authentication"]
+    tags=["Authentication"],
 )
 
-bearer_scheme = HTTPBearer()
 
-
-@router.post(
-    "/register",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED
-)
-def register_user(
+@router.post("/register", response_model=UserResponse)
+def register(
     user_data: UserRegister,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    email = user_data.email.strip().lower()
-
     existing_user = db.query(User).filter(
-        User.email == email
+        User.email == user_data.email
     ).first()
 
     if existing_user:
         raise HTTPException(
             status_code=400,
-            detail="Email already registered"
+            detail="Email already registered",
         )
 
     new_user = User(
-        full_name=user_data.full_name.strip(),
-        email=email,
+        full_name=user_data.full_name,
+        email=user_data.email,
         hashed_password=hash_password(user_data.password),
-        role="attendee"
+        role="attendee",
+        is_active=True,
     )
 
     db.add(new_user)
@@ -65,78 +51,54 @@ def register_user(
     return new_user
 
 
-@router.post("/login", response_model=TokenResponse)
-def login_user(
-    login_data: UserLogin,
-    db: Session = Depends(get_db)
+@router.post("/login")
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
 ):
-    email = login_data.email.strip().lower()
-
     user = db.query(User).filter(
-        User.email == email
+        User.email == form_data.username
     ).first()
 
     if not user or not verify_password(
-        login_data.password,
-        user.hashed_password
+        form_data.password,
+        user.hashed_password,
     ):
         raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
         )
 
     if not user.is_active:
         raise HTTPException(
             status_code=403,
-            detail="Account is inactive"
+            detail="Account is inactive",
         )
 
-    token = create_access_token(
-        user_id=user.id,
-        role=user.role
+    access_token = create_access_token(
+        data={"sub": str(user.id)},
+        expires_delta=timedelta(minutes=60),
     )
 
     return {
-        "access_token": token,
-        "token_type": "bearer"
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "role": user.role,
+        },
     }
-
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    db: Session = Depends(get_db)
-):
-    payload = decode_access_token(credentials.credentials)
-
-    if not payload or not payload.get("sub"):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or expired token"
-        )
-
-    try:
-        user_id = int(payload["sub"])
-    except (TypeError, ValueError):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid token"
-        )
-
-    user = db.query(User).filter(
-        User.id == user_id
-    ).first()
-
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=401,
-            detail="User not found or inactive"
-        )
-
-    return user
 
 
 @router.get("/me", response_model=UserResponse)
 def get_my_profile(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(
+        __import__(
+            "app.routers.auth",
+            fromlist=["get_current_user"]
+        ).get_current_user
+    ),
 ):
     return current_user
