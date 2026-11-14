@@ -54,7 +54,8 @@ def create_venue(
         }
     )
 
-    response = venue_agent.process_message(message)
+    # Pass database session to VenueAgent
+    response = venue_agent.process_message(message, db)
 
     if response.performative != "AGREE":
         raise HTTPException(
@@ -64,9 +65,13 @@ def create_venue(
 
     venue = Venue(**venue_data.model_dump())
 
-    db.add(venue)
-    db.commit()
-    db.refresh(venue)
+    try:
+        db.add(venue)
+        db.commit()
+        db.refresh(venue)
+    except Exception:
+        db.rollback()
+        raise
 
     return venue
 
@@ -132,7 +137,8 @@ def update_venue(
         }
     )
 
-    response = venue_agent.process_message(message)
+    # Pass database session to VenueAgent
+    response = venue_agent.process_message(message, db)
 
     if response.performative != "AGREE":
         raise HTTPException(
@@ -143,8 +149,12 @@ def update_venue(
     for key, value in update_data.items():
         setattr(venue, key, value)
 
-    db.commit()
-    db.refresh(venue)
+    try:
+        db.commit()
+        db.refresh(venue)
+    except Exception:
+        db.rollback()
+        raise
 
     return venue
 
