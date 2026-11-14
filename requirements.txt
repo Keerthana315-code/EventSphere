@@ -12,3 +12,5 @@ jinja2
 qrcode[pil]
 pytest
 httpx
+
+python-jose[cryptography]
