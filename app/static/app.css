@@ -1,0 +1,6 @@
+body { background: #f6f7f9; }
+.venue-img { height: 140px; object-fit: cover; }
+.msg-table .msg-content { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-word; min-width: 220px; }
+#reader { max-width: 420px; }
+.card { border-radius: .75rem; }
+@media (max-width: 400px) { .container { padding-left: 12px; padding-right: 12px; } }

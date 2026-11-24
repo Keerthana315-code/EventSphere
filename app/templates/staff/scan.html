@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Ticket scanner{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Gate scanner</h1>
+<div class="card card-body mb-3">
+  <label class="form-label" for="event">Event you are scanning for</label>
+  <select class="form-select mb-3" id="event">
+    {% for e in events %}<option value="{{ e.id }}">{{ e.title }} · {{ e.start_time|dt }}</option>{% endfor %}
+  </select>
+  <div id="reader" class="mb-2"></div>
+  <button class="btn btn-primary mb-2" id="startcam">Start camera</button>
+  <div class="input-group">
+    <input class="form-control" id="manual" placeholder="Or type the ticket code" autocomplete="off" autocapitalize="off">
+    <button class="btn btn-outline-primary" id="check">Check</button>
+  </div>
+</div>
+<div id="result" class="alert d-none" role="status"></div>
+<input type="hidden" id="csrf" value="{{ csrf_token }}">
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="/static/scanner.js"></script>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Hire decision{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Decision</h1>
+{% set c = result.content %}
+{% if result.performative == 'AGREE' %}
+  <div class="alert alert-success"><strong>Confirmed.</strong> {{ c.reason }}<br>{{ c.venue_name }} · {{ c.start|dt }} – {{ c.end|tm }} · <strong>{{ c.price|money }}</strong></div>
+{% elif result.performative == 'INFORM' %}
+  <div class="alert alert-warning"><strong>Sent to the admin for approval.</strong> {{ c.reason }}<br>Quoted price: <strong>{{ c.price|money }}</strong></div>
+{% elif result.performative == 'PROPOSE' %}
+  <div class="alert alert-info"><strong>That time is not available.</strong> {{ result.reason }} Here are alternatives:</div>
+{% else %}
+  <div class="alert alert-danger"><strong>Request not possible.</strong> {{ result.reason }}</div>
+{% endif %}
+
+{% if result.options %}
+<div class="list-group mb-3">
+{% for o in result.options %}
+  <form method="post" action="/hire" class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="venue_id" value="{{ o.venue_id }}">
+    <input type="hidden" name="start" value="{{ o.start }}">
+    <input type="hidden" name="end" value="{{ o.end }}">
+    <input type="hidden" name="guests" value="{{ form.guests }}">
+    <input type="hidden" name="purpose" value="{{ form.purpose }}">
+    <div><strong>{{ o.venue_name }}</strong><br><span class="small text-muted">{{ o.start|dt }} – {{ o.end|tm }}{% if o.price is not none %} · {{ o.price|money }}{% endif %}</span></div>
+    <button class="btn btn-sm btn-primary">Book this instead</button>
+  </form>
+{% endfor %}
+</div>
+{% endif %}
+<a class="btn btn-outline-secondary" href="/hire">New request</a>
+<a class="btn btn-outline-secondary" href="/hire/mine">My hire requests</a>
+{% endblock %}

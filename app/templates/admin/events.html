@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Manage events{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Events</h1><a class="btn btn-primary" href="/admin/events/new">+ New event</a></div>
+<div class="table-responsive">
+<table class="table align-middle">
+  <thead><tr><th>Event</th><th>When</th><th>Status</th><th class="text-end">Sold</th><th></th></tr></thead>
+  <tbody>
+  {% for e in events %}
+    <tr>
+      <td><a href="/events/{{ e.id }}">{{ e.title }}</a><div class="small text-muted">{{ e.venue_name }}</div></td>
+      <td class="small">{{ e.start_time|dt }}</td>
+      <td><span class="badge text-bg-{{ {'published': 'success', 'draft': 'warning', 'cancelled': 'danger'}[e.status] }}">{{ e.status }}</span></td>
+      <td class="text-end">{{ e.sold }} / {{ e.total_tickets }}</td>
+      <td class="text-end">
+        {% if e.status == 'draft' %}
+          <form class="d-inline" method="post" action="/admin/events/{{ e.id }}/publish"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-success">Publish</button></form>
+          <form class="d-inline" method="post" action="/admin/events/{{ e.id }}/delete" onsubmit="return confirm('Delete this draft?')"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-outline-secondary">Delete</button></form>
+        {% elif e.status == 'published' %}
+          <form class="d-inline" method="post" action="/admin/events/{{ e.id }}/cancel" onsubmit="return confirm('Cancel this event and refund everyone in full?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="reason" value="Cancelled by the organiser">
+            <button class="btn btn-sm btn-outline-danger">Cancel event</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}<tr><td colspan="5" class="text-muted">No events yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h1 class="h3 mb-0">Organiser dashboard</h1>
+  <a class="btn btn-outline-primary btn-sm" href="/admin/messages">Agent message log →</a>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-4"><div class="card card-body text-center"><div class="small text-muted">Tickets sold</div><div class="fs-3 fw-bold">{{ data.totals.sold }}</div></div></div>
+  <div class="col-4"><div class="card card-body text-center"><div class="small text-muted">Revenue (simulated)</div><div class="fs-5 fw-bold">{{ data.totals.revenue|money }}</div></div></div>
+  <div class="col-4"><div class="card card-body text-center"><div class="small text-muted">Check-ins</div><div class="fs-3 fw-bold">{{ data.totals.checkins }}</div></div></div>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-6"><div class="card card-body"><h2 class="h6">Tickets sold per event</h2><canvas id="salesChart" height="200"></canvas></div></div>
+  <div class="col-12 col-lg-6"><div class="card card-body"><h2 class="h6">Check-ins over time</h2><canvas id="checkinChart" height="200"></canvas></div></div>
+</div>
+<h2 class="h5">Per event</h2>
+<div class="table-responsive">
+<table class="table table-sm align-middle">
+  <thead><tr><th>Event</th><th>Status</th><th class="text-end">Sold / ticket capacity</th><th class="text-end">Venue capacity</th><th class="text-end">Revenue</th><th class="text-end">Check-ins</th></tr></thead>
+  <tbody>
+  {% for e in data.events %}
+    <tr><td><a href="/events/{{ e.id }}">{{ e.title }}</a><div class="small text-muted">{{ e.start_time|dt }}</div></td>
+      <td><span class="badge text-bg-{{ 'success' if e.status == 'published' else 'secondary' }}">{{ e.status }}</span></td>
+      <td class="text-end">{{ e.sold }} / {{ e.ticket_capacity }}</td><td class="text-end">{{ e.venue_capacity }}</td>
+      <td class="text-end">{{ e.revenue|money }}</td><td class="text-end">{{ e.checkins }}</td></tr>
+  {% else %}<tr><td colspan="6" class="text-muted">No published events yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% if data.suspicious %}
+<div class="alert alert-warning"><strong>Suspicious tickets</strong> (repeated rejected scans, possible shared screenshot):
+  {% for s in data.suspicious %}<code>{{ s.code }}</code> ({{ s.rejected }} rejected){{ ', ' if not loop.last }}{% endfor %}</div>
+{% endif %}
+<script id="chartdata" type="application/json">{{ {'events': data.events|map(attribute='title')|list, 'sold': data.events|map(attribute='sold')|list, 'hours': data.checkins_by_hour.keys()|list, 'counts': data.checkins_by_hour.values()|list}|tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+var d = JSON.parse(document.getElementById('chartdata').textContent);
+new Chart(document.getElementById('salesChart'), {type: 'bar', data: {labels: d.events, datasets: [{label: 'Tickets sold', data: d.sold, backgroundColor: '#0d6efd'}]}, options: {scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}});
+new Chart(document.getElementById('checkinChart'), {type: 'line', data: {labels: d.hours, datasets: [{label: 'Check-ins per hour', data: d.counts, borderColor: '#198754', tension: .2}]}, options: {scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}});
+</script>
+{% endblock %}

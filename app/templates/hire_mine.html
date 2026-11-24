@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}My hire requests{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">My hire requests</h1>
+{% if not hires %}<p class="text-muted">No requests yet. <a href="/hire">Request a venue</a>.</p>{% endif %}
+<div class="list-group">
+{% for h in hires %}
+  <div class="list-group-item">
+    <div class="d-flex justify-content-between flex-wrap">
+      <strong>{{ h.venue_name }}</strong>
+      <span class="badge text-bg-{{ {'confirmed': 'success', 'pending': 'warning', 'rejected': 'danger', 'declined': 'secondary'}[h.status] }}">{{ h.status }}</span>
+    </div>
+    <div class="small">{{ h.start_time|dt }} – {{ h.end_time|tm }} · {{ h.guests }} guests · {{ h.purpose }}</div>
+    <div class="small text-muted">{% if h.price %}{{ h.price|money }} · {% endif %}{{ h.reason }}</div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+sequenceDiagram
+  autonumber
+  participant U as Attendee (via web)
+  participant BK as BookingAgent
+  participant T as TicketAgent
+  participant N as NotificationAgent
+  participant W as WaitlistAgent
+  U->>BK: REQUEST book (event, 2 tickets)
+  Note over BK: atomic UPDATE ... WHERE sold + q <= quantity
+  BK->>T: REQUEST issue_tickets
+  T-->>BK: INFORM (unique codes)
+  BK-->>U: AGREE (payment ref, tickets)
+  BK--)N: INFORM booking_confirmed (broadcast)
+  U->>BK: REQUEST cancel
+  BK->>T: REQUEST cancel_tickets
+  BK-->>U: AGREE (refund 100/50/0 %)
+  BK--)N: INFORM booking_cancelled
+  BK--)W: INFORM seats_freed
+  W->>BK: REQUEST hold_seats (first in queue)
+  BK-->>W: AGREE
+  W--)N: INFORM seats_offered
+  Note over W: Scheduler sweep expires unclaimed holds and re-offers

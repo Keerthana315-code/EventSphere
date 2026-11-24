@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}My tickets{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">My tickets</h1>
+
+{% if waitlist %}
+<h2 class="h5">Waitlist</h2>
+{% for w in waitlist %}
+<div class="card card-body mb-3 {{ 'border-success' if w.status == 'offered' }}">
+  <strong>{{ w.title }}</strong>
+  <span class="text-muted small">{{ w.quantity }} × {{ w.category_name }}</span>
+  {% if w.status == 'offered' %}
+    <p class="mb-2 mt-2">Seats are held for you! Time left:
+      <span class="badge text-bg-warning fs-6 countdown" data-left="{{ w.seconds_left }}">--:--</span></p>
+    <form method="post" action="/waitlist/{{ w.id }}/claim" class="d-flex flex-wrap gap-2 align-items-center">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-success">Claim now (simulated payment)</button>
+    </form>
+  {% else %}
+    <p class="mb-2 mt-2 small text-muted">Waiting for a seat. We will notify you.</p>
+  {% endif %}
+  <form method="post" action="/waitlist/{{ w.id }}/leave" class="mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn btn-sm btn-outline-secondary">Leave waitlist</button>
+  </form>
+</div>
+{% endfor %}
+{% endif %}
+
+<h2 class="h5">Bookings</h2>
+{% if not bookings %}<p class="text-muted">No bookings yet. <a href="/">Browse events</a>.</p>{% endif %}
+{% for b in bookings %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between flex-wrap">
+    <strong><a class="text-decoration-none" href="/events/{{ b.event_id }}">{{ b.title }}</a></strong>
+    <span class="badge text-bg-{{ 'success' if b.status == 'confirmed' else 'secondary' }}">{{ b.status }}</span>
+  </div>
+  <div class="card-body">
+    <p class="mb-1 small">{{ b.start_time|dt }} · Paid {{ b.total|money }} · ref {{ b.payment_ref }}</p>
+    {% if b.status == 'cancelled' %}
+      <p class="small text-muted mb-2">Refunded {{ b.refund_amount|money }} ({{ b.refund_percent }}%) · {{ b.cancel_reason }}</p>
+    {% endif %}
+    <div class="d-flex flex-wrap gap-2 mb-2">
+    {% for t in b.tickets %}
+      {% if t.status == 'valid' %}
+        <a class="btn btn-sm btn-primary" href="/tickets/{{ t.code }}">{{ t.category_name }} · Show QR</a>
+      {% else %}
+        <span class="btn btn-sm btn-outline-secondary disabled">{{ t.category_name }} · {{ t.status }}</span>
+      {% endif %}
+    {% endfor %}
+    </div>
+    {% if b.can_cancel %}
+    <form method="post" action="/bookings/{{ b.id }}/cancel" onsubmit="return confirm('Cancel this booking? Refund today: {{ b.refund_preview }}%')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-sm btn-outline-danger">Cancel booking (refund today: {{ b.refund_preview }}%)</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+<p class="small text-muted">{{ policy }}</p>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.countdown').forEach(function (el) {
+  var left = parseInt(el.dataset.left, 10);
+  function tick() {
+    if (left <= 0) { el.textContent = 'expired'; el.className = 'badge text-bg-danger fs-6'; return; }
+    var m = Math.floor(left / 60), s = left % 60;
+    el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    left -= 1; setTimeout(tick, 1000);
+  }
+  tick();
+});
+</script>
+{% endblock %}

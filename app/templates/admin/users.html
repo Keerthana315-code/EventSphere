@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Users</h1>
+<div class="table-responsive"><table class="table table-sm">
+  <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+  <tbody>{% for u in users %}<tr><td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ u.role }}</td><td class="small">{{ u.created_at|dt }}</td></tr>{% endfor %}</tbody>
+</table></div>
+<h2 class="h5 mt-4">Create a staff or admin account</h2>
+<form method="post" action="/admin/users" class="card card-body">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="row g-2">
+    <div class="col-12 col-md-3"><input class="form-control" name="name" placeholder="Full name" required></div>
+    <div class="col-12 col-md-3"><input class="form-control" type="email" name="email" placeholder="Email" required></div>
+    <div class="col-12 col-md-3"><input class="form-control" type="password" name="password" placeholder="Password (8+)" minlength="8" required></div>
+    <div class="col-6 col-md-2"><select class="form-select" name="role"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+    <div class="col-6 col-md-1 d-grid"><button class="btn btn-primary">Add</button></div>
+  </div>
+</form>
+{% endblock %}

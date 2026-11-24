@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}New event{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">New event</h1>
+{% if suggestions %}
+<div class="card card-body border-info mb-3">
+  <strong>VenueAgent suggests:</strong>
+  {% if suggestions.alternative_times %}<div class="small mt-1">Free times at this venue:
+    {% for o in suggestions.alternative_times %}<span class="badge text-bg-info">{{ o.start|dt }} – {{ o.end|tm }}</span> {% endfor %}</div>{% endif %}
+  {% if suggestions.alternative_venues %}<div class="small mt-1">Other venues free at the same time:
+    {% for o in suggestions.alternative_venues %}<span class="badge text-bg-info">{{ o.venue_name }}</span> {% endfor %}</div>{% endif %}
+</div>
+{% endif %}
+<form method="post" action="/admin/events/new" class="card card-body">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="row g-3">
+    <div class="col-12 col-md-8"><label class="form-label">Title</label><input class="form-control" name="title" required minlength="3" value="{{ form.get('title', '') }}"></div>
+    <div class="col-12 col-md-4"><label class="form-label">Category</label>
+      <select class="form-select" name="category">{% for c in categories %}<option {{ 'selected' if form.get('category') == c }}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="col-12 col-md-4"><label class="form-label">Venue</label>
+      <select class="form-select" name="venue_id">{% for v in venues %}<option value="{{ v.id }}" {{ 'selected' if form.get('venue_id')|string == v.id|string }}>{{ v.name }} (capacity {{ v.capacity }})</option>{% endfor %}</select></div>
+    <div class="col-6 col-md-4"><label class="form-label">Starts</label><input class="form-control" type="datetime-local" name="start" required value="{{ form.get('start', '') }}"></div>
+    <div class="col-6 col-md-4"><label class="form-label">Ends</label><input class="form-control" type="datetime-local" name="end" required value="{{ form.get('end', '') }}"></div>
+    <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" name="description" rows="3">{{ form.get('description', '') }}</textarea></div>
+  </div>
+  <h2 class="h6 mt-4">Ticket categories <span class="text-muted small">(total tickets may not exceed the venue capacity)</span></h2>
+  <div id="cats">
+    {% for c in (form.get('cats') or [{'name': 'General', 'price': '', 'quantity': ''}]) %}
+    <div class="row g-2 mb-2 cat-row">
+      <div class="col-5"><input class="form-control" name="cat_name" placeholder="Name" value="{{ c.name }}"></div>
+      <div class="col-3"><input class="form-control" name="cat_price" type="number" min="0" step="0.01" placeholder="Price" value="{{ c.price }}"></div>
+      <div class="col-4"><input class="form-control" name="cat_qty" type="number" min="1" placeholder="Quantity" value="{{ c.quantity }}"></div>
+    </div>
+    {% endfor %}
+  </div>
+  <button type="button" class="btn btn-sm btn-outline-secondary align-self-start" id="addcat">+ Add category</button>
+  <div class="mt-4 d-flex flex-wrap gap-2">
+    <button class="btn btn-success" name="action" value="publish">Publish</button>
+    <button class="btn btn-outline-primary" name="action" value="draft">Save as draft</button>
+    <a class="btn btn-outline-secondary" href="/admin/events">Cancel</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('addcat').addEventListener('click', function () {
+  var row = document.querySelector('.cat-row').cloneNode(true);
+  row.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+  document.getElementById('cats').appendChild(row);
+});
+</script>
+{% endblock %}

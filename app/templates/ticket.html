@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Ticket{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-12 col-sm-8 col-md-5">
+  <div class="card text-center shadow">
+    <div class="card-body">
+      <h1 class="h5">{{ ticket.title }}</h1>
+      <p class="mb-1">{{ ticket.start_time|dt }}</p>
+      <p class="text-muted small">{{ ticket.venue_name }} · {{ ticket.category_name }}</p>
+      {% if ticket.status == 'valid' and ticket.event_status != 'cancelled' %}
+        <img class="img-fluid my-2" src="/tickets/{{ ticket.code }}/qr.png" alt="Ticket QR code" width="260" height="260">
+        <p class="small text-muted mb-1">Show this QR code at the entrance</p>
+        <code class="small user-select-all">{{ ticket.code }}</code>
+      {% elif ticket.status == 'used' %}
+        <div class="alert alert-secondary my-3">Already used at {{ ticket.used_at|dt }}</div>
+      {% else %}
+        <div class="alert alert-danger my-3">This ticket is cancelled.</div>
+      {% endif %}
+    </div>
+  </div>
+  <a class="btn btn-link mt-2" href="/my/bookings">← Back to my tickets</a>
+</div></div>
+{% endblock %}

@@ -1,0 +1,28 @@
+flowchart LR
+  subgraph Browser["Phone browser (Bootstrap UI, QR scanner)"]
+    U1[Attendee]:::u
+    U2[Gate staff]:::u
+    U3[Admin / organiser]:::u
+  end
+  subgraph Web["FastAPI web layer (routers + Jinja templates)"]
+    R[Routes + role checks + CSRF]
+    S[services.py - turns a user action into agent REQUESTs]
+  end
+  subgraph Bus["Message bus - JSON messages, performatives, conversation id, logged"]
+    B((MessageBus))
+  end
+  subgraph Agents["Agents - own goal, own state, own rules"]
+    V[VenueAgent]
+    BK[BookingAgent]
+    T[TicketAgent]
+    W[WaitlistAgent]
+    N[NotificationAgent]
+  end
+  SCH[[Scheduler thread - timer sweep]]
+  DB[(PostgreSQL / SQLite)]
+  U1 & U2 & U3 --> R --> S --> B
+  B <--> V & BK & T & W & N
+  SCH -->|REQUEST sweep| B
+  Agents --> DB
+  B -->|every message| DB
+  classDef u fill:#e8f1ff,stroke:#0d6efd

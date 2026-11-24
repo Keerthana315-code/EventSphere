@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Events{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Upcoming events</h1>
+<form method="get" action="/" class="card card-body mb-3">
+  <div class="row g-2">
+    <div class="col-12 col-md-4"><input class="form-control" name="q" placeholder="Search events" value="{{ f.q }}" aria-label="Search"></div>
+    <div class="col-6 col-md-3">
+      <select class="form-select" name="category" aria-label="Category">
+        <option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c }}" {{ 'selected' if f.category == c }}>{{ c }}</option>{% endfor %}
+      </select></div>
+    <div class="col-6 col-md-3">
+      <select class="form-select" name="venue_id" aria-label="Venue">
+        <option value="">All venues</option>
+        {% for v in venues %}<option value="{{ v.id }}" {{ 'selected' if f.venue_id|string == v.id|string }}>{{ v.name }}</option>{% endfor %}
+      </select></div>
+    <div class="col-12 col-md-2 d-grid"><button class="btn btn-primary">Search</button></div>
+  </div>
+  <details class="mt-2"><summary class="small text-muted">More filters (dates, price)</summary>
+    <div class="row g-2 mt-1">
+      <div class="col-6 col-md-3"><label class="form-label small">From</label><input class="form-control" type="date" name="date_from" value="{{ f.date_from }}"></div>
+      <div class="col-6 col-md-3"><label class="form-label small">To</label><input class="form-control" type="date" name="date_to" value="{{ f.date_to }}"></div>
+      <div class="col-6 col-md-3"><label class="form-label small">Min price</label><input class="form-control" type="number" min="0" name="price_min" value="{{ f.price_min }}"></div>
+      <div class="col-6 col-md-3"><label class="form-label small">Max price</label><input class="form-control" type="number" min="0" name="price_max" value="{{ f.price_max }}"></div>
+    </div>
+  </details>
+</form>
+{% if not events %}<p class="text-muted">No events match your search.</p>{% endif %}
+<div class="row g-3">
+{% for e in events %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <span class="badge text-bg-secondary mb-2">{{ e.category }}</span>
+        {% if e.left_total == 0 %}<span class="badge text-bg-danger mb-2">Sold out</span>{% endif %}
+        <h2 class="h5"><a class="stretched-link text-decoration-none" href="/events/{{ e.id }}">{{ e.title }}</a></h2>
+        <p class="mb-1 small">{{ e.start_time|dt }}</p>
+        <p class="mb-1 small text-muted">{{ e.venue_name }}</p>
+        <p class="mb-0 fw-semibold">{% if e.min_price == 0 %}Free{% else %}From {{ e.min_price|money }}{% endif %}
+          <span class="text-muted fw-normal small"> · {{ e.left_total }} left</span></p>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

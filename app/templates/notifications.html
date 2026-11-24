@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Notifications</h1>
+{% if not items %}<p class="text-muted">Nothing yet.</p>{% endif %}
+<div class="list-group">
+{% for n in items %}
+  <div class="list-group-item {{ 'list-group-item-warning' if not n.is_read }}">
+    <div class="d-flex justify-content-between"><strong>{{ n.title }}</strong><small class="text-muted">{{ n.created_at|dt }}</small></div>
+    <div>{{ n.body }}</div>
+    {% if n.link %}<a class="small" href="{{ n.link }}">Open</a>{% endif %}
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <span class="badge text-bg-secondary">{{ event.category }}</span>
+  {% if event.status == 'cancelled' %}<span class="badge text-bg-danger">Cancelled</span>{% endif %}
+  {% if event.status == 'draft' %}<span class="badge text-bg-warning">Draft</span>{% endif %}
+  <h1 class="h3 mt-2">{{ event.title }}</h1>
+  <p class="mb-1">{{ event.start_time|dt }} – {{ event.end_time|tm }}</p>
+  <p class="mb-1 text-muted">{{ event.venue_name }} · {{ event.venue_location }}</p>
+  <p>{{ event.description }}</p>
+</div>
+{% if event.status == 'cancelled' %}
+  <div class="alert alert-danger">This event was cancelled ({{ event.cancel_reason }}). All bookings were refunded in full.</div>
+{% elif started %}
+  <div class="alert alert-secondary">Sales are closed: this event has started.</div>
+{% elif event.status == 'published' %}
+<h2 class="h5">Tickets</h2>
+<form method="post" action="/events/{{ event.id }}/book">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <ul class="list-group mb-3">
+  {% for c in categories %}
+    <li class="list-group-item">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div><strong>{{ c.name }}</strong><br><span class="text-muted small">{{ c.price|money }} · {{ c.remaining }} left of {{ c.quantity }}</span></div>
+        {% if c.remaining > 0 %}
+          <select class="form-select w-auto" name="qty_{{ c.id }}" aria-label="Quantity for {{ c.name }}">
+            {% for n in range(0, [c.remaining, max_qty]|min + 1) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+          </select>
+        {% else %}
+          <span class="badge text-bg-danger">Sold out</span>
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+  </ul>
+  {% if user %}
+    {% if categories|selectattr('remaining', 'gt', 0)|list %}
+    <div class="form-check mb-2">
+      <input class="form-check-input" type="checkbox" name="simulate_failure" id="fail">
+      <label class="form-check-label small" for="fail">Demo: simulate a failed payment</label>
+    </div>
+    <button class="btn btn-primary">Pay now (simulated)</button>
+    <p class="small text-muted mt-2">No real payment is taken. {{ policy }}</p>
+    {% endif %}
+  {% else %}
+    <a class="btn btn-primary" href="/login?next=/events/{{ event.id }}">Sign in to book</a>
+  {% endif %}
+</form>
+
+{% if user %}
+  {% for c in categories if c.remaining == 0 %}
+  <div class="card card-body mt-3">
+    <h3 class="h6">{{ c.name }} is sold out</h3>
+    {% if waiting.get(c.id) %}
+      <p class="mb-0">You are on the waitlist for this ticket type ({{ waiting[c.id].status }}). <a href="/my/bookings">See your waitlist</a>.</p>
+    {% else %}
+    <form method="post" action="/events/{{ event.id }}/waitlist" class="row g-2 align-items-end">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="category_id" value="{{ c.id }}">
+      <div class="col-6 col-md-3"><label class="form-label small">Tickets wanted</label>
+        <select class="form-select" name="quantity">{% for n in range(1, max_qty + 1) %}<option>{{ n }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-4 d-grid"><button class="btn btn-outline-primary">Join waitlist</button></div>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% endif %}
+{% endif %}
+{% endblock %}
