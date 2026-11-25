@@ -15,6 +15,7 @@ class Settings:
     seed_demo: bool
     demo_password: str
     currency: str = "LKR"
+    public_base_url: str = ""  # e.g. https://eventsphere.onrender.com - used inside the ticket QR
 
 
 def get_settings() -> Settings:
@@ -28,4 +29,5 @@ def get_settings() -> Settings:
         https_only=os.getenv("HTTPS_ONLY", "0") == "1",
         seed_demo=os.getenv("SEED_DEMO", "1") == "1",
         demo_password=os.getenv("DEMO_PASSWORD", "Demo@2026!"),
+        public_base_url=os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/"),
     )

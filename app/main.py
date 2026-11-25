@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import get_settings
 from .db import Database
-from .routers import admin, agents_api, attendee, auth, public, staff
+from .routers import admin, agents_api, attendee, auth, public, staff, verify
 from .seed import seed_demo
 from .system import Scheduler, System
 from .web import BASE_DIR, RedirectTo, render
@@ -40,7 +40,7 @@ def create_app(database_url: str | None = None, run_scheduler: bool = True, seed
     app.add_middleware(SessionMiddleware, secret_key=settings.secret_key, https_only=settings.https_only,
                        same_site="lax", max_age=60 * 60 * 8, session_cookie="eventsphere_session")
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-    for module in (auth, public, attendee, admin, staff, agents_api):
+    for module in (auth, public, attendee, admin, staff, agents_api, verify):
         app.include_router(module.router)
 
     @app.exception_handler(RedirectTo)

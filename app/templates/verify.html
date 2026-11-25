@@ -1,0 +1,25 @@
+{% extends "base.html" %} {% block title %}Ticket verification{% endblock %} {% block content %}
+{% if ticket.status == 'valid' and ticket.event_status != 'cancelled' %}
+VALID TICKET
+{% elif ticket.status == 'used' %}
+ALREADY USED
+{{ ticket.used_at|dt }}
+{% else %}
+NOT VALID - cancelled ticket or event
+{% endif %}
+{{ ticket.title }}
+{{ ticket.start_time|dt }}
+
+{{ ticket.venue_name }}
+
+{{ ticket.category_name }}
+
+Holder: {{ holder }}
+
+{{ ticket.code }} {% if is_staff %} {% if ticket.status == 'valid' %}
+Admit guest (check in)
+{% endif %} {% elif not user %}
+Event staff?
+
+Staff login {% endif %}
+{% endblock %}

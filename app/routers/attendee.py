@@ -80,8 +80,14 @@ def ticket_qr(request: Request, code: str, user=Depends(login_required)):
     import qrcode  # any Python QR library is allowed
 
     _own_ticket(request, code, user)
+    # The QR holds a link, so a phone camera opens the ticket page; the gate scanner extracts the code from it.
+    base = request.app.state.settings.public_base_url
+    if not base:
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+        base = f"{proto}://{host}"
     buffer = io.BytesIO()
-    qrcode.make(code, box_size=8, border=2).save(buffer, format="PNG")
+    qrcode.make(f"{base}/verify/{code}", box_size=8, border=2).save(buffer, format="PNG")
     return Response(buffer.getvalue(), media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
 
 

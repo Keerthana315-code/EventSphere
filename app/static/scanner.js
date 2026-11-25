@@ -17,11 +17,18 @@
     if (navigator.vibrate) { navigator.vibrate(data.ok ? 80 : [120, 60, 120]); }
   }
 
-  function check(code) {
+  // The camera keeps seeing the same QR for as long as it is held up, so the same code from the camera is
+  // ignored for 10 seconds (otherwise the first ADMIT is followed by "already used" and false repeat-scan alarms).
+  // Typing/pasting a code is always sent (1 s guard only against a double click).
+  function check(code, fromCamera) {
     code = (code || '').trim();
+    // QR now holds a link like https://site/verify/<code>; keep only the code
+    var m = code.match(/\/verify\/([^\/?#\s]+)/);
+    if (m) { code = m[1]; }
     if (!code) { return; }
     var now = Date.now();
-    if (code === lastCode && now - lastTime < 3000) { return; }  // ignore the camera re-reading the same QR
+    var cooldown = fromCamera === true ? 10000 : 1000;
+    if (code === lastCode && now - lastTime < cooldown) { return; }
     lastCode = code; lastTime = now;
     fetch('/staff/scan', {
       method: 'POST',
@@ -43,7 +50,7 @@
     if (scanner) { return; }
     if (typeof Html5Qrcode === 'undefined') { show({ok: false, result: 'error', reason: 'Camera library not loaded - use manual entry.'}); return; }
     scanner = new Html5Qrcode('reader');
-    scanner.start({facingMode: 'environment'}, {fps: 10, qrbox: 240}, check).catch(function () {
+    scanner.start({facingMode: 'environment'}, {fps: 10, qrbox: 240}, function (text) { check(text, true); }).catch(function () {
       scanner = null;
       show({ok: false, result: 'error', reason: 'Camera not available (allow camera access, HTTPS required). Use manual entry.'});
     });
